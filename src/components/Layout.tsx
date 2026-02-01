@@ -2,6 +2,24 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutGrid, Plus, Github } from 'lucide-react';
 
+interface NavLinkProps {
+    to: string;
+    active: boolean;
+    children: React.ReactNode;
+}
+
+const NavLink: React.FC<NavLinkProps> = ({ to, active, children }) => (
+    <Link
+        to={to}
+        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+    >
+        {children}
+    </Link>
+);
+
 interface LayoutProps {
     children: React.ReactNode;
 }
@@ -62,23 +80,5 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
     );
 };
-
-interface NavLinkProps {
-    to: string;
-    active: boolean;
-    children: React.ReactNode;
-}
-
-const NavLink: React.FC<NavLinkProps> = ({ to, active, children }) => (
-    <Link
-        to={to}
-        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
-                ? 'text-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-    >
-        {children}
-    </Link>
-);
 
 export default Layout;

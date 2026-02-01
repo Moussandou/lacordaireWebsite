@@ -5,6 +5,24 @@ import { db, storage } from '../lib/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { Upload, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 
+interface FormFieldProps {
+    label: string;
+    hint?: string;
+    required?: boolean;
+    children: React.ReactNode;
+}
+
+const FormField: React.FC<FormFieldProps> = ({ label, hint, required, children }) => (
+    <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            {label}
+            {required && <span className="text-red-500 ml-0.5">*</span>}
+        </label>
+        {children}
+        {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+    </div>
+);
+
 const Submit: React.FC = () => {
     const navigate = useNavigate();
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -189,23 +207,5 @@ const Submit: React.FC = () => {
         </div>
     );
 };
-
-interface FormFieldProps {
-    label: string;
-    hint?: string;
-    required?: boolean;
-    children: React.ReactNode;
-}
-
-const FormField: React.FC<FormFieldProps> = ({ label, hint, required, children }) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            {label}
-            {required && <span className="text-red-500 ml-0.5">*</span>}
-        </label>
-        {children}
-        {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
-    </div>
-);
 
 export default Submit;

@@ -19,11 +19,13 @@ const Home: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [searchTerm, setSearchTerm] = useState('');
+
     useEffect(() => {
         const fetchProjects = async () => {
             try {
                 const projectsRef = collection(db, 'projects');
-                const q = query(projectsRef);
+                const q = query(projectsRef, orderBy('createdAt', 'desc'));
                 const querySnapshot = await getDocs(q);
 
                 const fetchedProjects: Project[] = querySnapshot.docs.map(doc => ({
@@ -42,6 +44,12 @@ const Home: React.FC = () => {
 
         fetchProjects();
     }, []);
+
+    const filteredProjects = projects.filter(project =>
+        project.projectTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     if (loading) {
         return (
@@ -70,7 +78,6 @@ const Home: React.FC = () => {
                 </h1>
                 <p className="text-slate-600 text-lg leading-relaxed">
                     Découvrez les sites web réalisés par nos talentueux élèves.
-                    Parcourez la collection, vérifiez leur progression et visitez leurs créations.
                 </p>
             </div>
 
@@ -82,20 +89,26 @@ const Home: React.FC = () => {
                     type="text"
                     className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm transition-shadow"
                     placeholder="Rechercher un projet ou un élève..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
-            {projects.length === 0 ? (
+            {filteredProjects.length === 0 ? (
                 <div className="text-center py-24 bg-white rounded-2xl border border-slate-200 border-dashed shadow-sm">
                     <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Search className="w-8 h-8 text-slate-300" />
                     </div>
-                    <p className="text-slate-900 font-medium text-lg">Aucun projet soumis pour le moment.</p>
-                    <p className="text-slate-500 mt-1">Soyez le premier à partager votre travail !</p>
+                    <p className="text-slate-900 font-medium text-lg">Aucun projet trouvé.</p>
+                    <p className="text-slate-500 mt-1">
+                        {projects.length === 0
+                            ? "Soyez le premier à partager votre travail !"
+                            : "Essayez avec d'autres mots-clés."}
+                    </p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {projects.map((project) => (
+                    {filteredProjects.map((project) => (
                         <ProjectCard key={project.id} project={project} />
                     ))}
                 </div>

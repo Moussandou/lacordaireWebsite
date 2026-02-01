@@ -1,40 +1,35 @@
 # Lacordaire Hosting Hub
 
-Une plateforme centralisée pour héberger et prévisualiser les sites web des élèves. Construit avec Vite, React, TailwindCSS et Firebase.
+Une plateforme centralisée pour héberger et prévisualiser les sites web des élèves.
 
-## 🚀 Pour Commencer
+## 🚀 Fonctionnement Automatisé
 
-Si vous venez de récupérer le projet, installez d'abord les dépendances.
+Ce Hub est conçu pour être géré avec un minimum d'effort ("Zéro manual download").
 
-### 1. Installation
-Exécutez cette commande dans votre terminal :
+### 1. Installation & Lancement
 ```bash
 sh setup.sh
 ```
-Ou manuellement :
-```bash
-npm install
-npm run dev
-```
 
-### 2. Déploiement
-Pour mettre en ligne le Hub :
-```bash
-npm run build
-firebase deploy
-```
+### 2. Flux de Travail
+1.  **Les élèves envoient** leurs fichiers `.html` via la page **Soumettre**.
+2.  **L'enseignant déploie** simplement le projet :
+    ```bash
+    npm run build
+    firebase deploy
+    ```
+    *Note : La commande `build` récupère automatiquement tous les derniers fichiers envoyés par les élèves sur Firestore/Storage et les prépare pour l'hébergement.*
 
-## 🛠 Structure du Projet
+## 🛠 Structure & Automation
 
-- **`/src/pages`** : Les pages principales (`Home.tsx`, `Submit.tsx`).
-- **`/src/components`** : Composants réutilisables (`ProjectCard.tsx`, `Layout.tsx`).
-- **`/src/lib`** : Configuration Firebase (Firestore + Storage).
-- **`/public/students`** : (Action Manuelle) Déposez les dossiers des élèves ici pour les héberger définitivement.
+- **`scripts/sync-students.js`** : Script magique qui télécharge les projets du Storage vers `public/students/`.
+- **`.github/workflows/deploy.yml`** : Déploiement automatique vers Firebase Hosting à chaque push sur `main` (si GitHub Secrets configurés).
+- **`/src`** : Code React (Vite + Tailwind).
 
-## 🔥 Fonctionnalités Firebase
-Ce projet utilise :
-- **Firestore** : Pour stocker les détails du projet (Nom, Titre, Description).
-- **Storage** : Pour recevoir les fichiers `.html` des élèves via le formulaire.
-- **Hosting** : Pour servir le Hub et les sites "validés".
+## 🔒 Configuration Sécurisée
 
-> **Note** : Le formulaire d'envoi dépose le fichier HTML dans le **Storage**. L'enseignant doit ensuite récupérer ce fichier et le placer dans le dossier `public/students/` avant de redéployer pour que le site soit visible publiquement.
+Les clés API sont stockées dans le fichier **`.env`** (non suivi par Git).
+Pour le déploiement automatique sur GitHub, assurez-vous de configurer les **GitHub Secrets** (voir le fichier `github_secrets.md` dans vos notes).
+
+---
+© 2026 Lacordaire Hosting

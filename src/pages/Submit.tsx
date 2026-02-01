@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
-import { useNavigate } from 'react-router-dom';
-import { Send, UploadCloud, FileType } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Upload, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 
 const Submit: React.FC = () => {
     const navigate = useNavigate();
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
     const [file, setFile] = useState<File | null>(null);
     const [formData, setFormData] = useState({
         studentName: '',
@@ -17,174 +17,195 @@ const Submit: React.FC = () => {
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        const { name, value } = e.target;
+
+        if (name === 'slug') {
+            const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+            setFormData({ ...formData, slug: sanitized });
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const selectedFile = e.target.files[0];
-            if (selectedFile.type === "text/html" || selectedFile.name.endsWith('.html')) {
-                setFile(selectedFile);
-            } else {
-                alert("Veuillez sélectionner un fichier HTML valide (.html)");
-                e.target.value = ''; // Reset input
-            }
+        const selectedFile = e.target.files?.[0];
+        if (selectedFile && (selectedFile.type === "text/html" || selectedFile.name.endsWith('.html'))) {
+            setFile(selectedFile);
+        } else {
+            alert("Veuillez sélectionner un fichier HTML.");
+            e.target.value = '';
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!file) {
-            alert("Veuillez sélectionner votre fichier index.html");
+            alert("Veuillez sélectionner votre fichier HTML.");
             return;
         }
 
-        setIsSubmitting(true);
+        setStatus('submitting');
 
         try {
-            // 1. Upload File to Firebase Storage
-            const storageRef = ref(storage, `submissions/${formData.studentName}/${formData.slug}/${file.name}`);
+            const storageRef = ref(storage, `submissions/${formData.slug}/${file.name}`);
             const snapshot = await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(snapshot.ref);
 
-            // 2. Save Metadata to Firestore
             await addDoc(collection(db, 'projects'), {
                 ...formData,
-                htmlFileUrl: downloadURL, // Store link to the uploaded file
+                htmlFileUrl: downloadURL,
                 createdAt: new Date(),
                 status: 'pending'
             });
 
-            // Navigate home or show success
-            navigate('/');
+            setStatus('success');
+            setTimeout(() => navigate('/'), 2000);
         } catch (error) {
-            console.error("Erreur lors de la soumission : ", error);
-            alert("Une erreur est survenue lors de l'envoi. Vérifiez votre connexion.");
-        } finally {
-            setIsSubmitting(false);
+            console.error("Erreur:", error);
+            setStatus('error');
         }
     };
 
-    return (
-        <div className="max-w-xl mx-auto py-8">
-            <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                    Soumettre votre Projet
-                </h2>
-                <p className="text-slate-500 mb-8">
-                    Remplissez le formulaire ci-dessous et téléversez votre fichier HTML principal.
-                </p>
+    if (status === 'success') {
+        return (
+            <div className="max-w-md mx-auto text-center py-16">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Projet envoyé !</h2>
+                <p className="text-gray-500">Redirection en cours...</p>
+            </div>
+        );
+    }
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-1.5">
-                        <label htmlFor="studentName" className="text-sm font-semibold text-slate-700">Nom de l'élève</label>
+    return (
+        <div className="max-w-lg mx-auto">
+            <Link
+                to="/"
+                className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Retour aux projets
+            </Link>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8">
+                <h1 className="text-xl font-semibold text-gray-900 mb-1">Soumettre un projet</h1>
+                <p className="text-sm text-gray-500 mb-6">Remplissez le formulaire pour partager votre site.</p>
+
+                {status === 'error' && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-lg flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium text-red-800">Erreur lors de l'envoi</p>
+                            <p className="text-sm text-red-600">Veuillez réessayer.</p>
+                        </div>
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <FormField label="Votre nom" required>
                         <input
                             type="text"
-                            id="studentName"
                             name="studentName"
                             required
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 transition-all outline-none"
                             placeholder="Jean Dupont"
                             value={formData.studentName}
                             onChange={handleChange}
+                            className="form-input"
                         />
-                    </div>
+                    </FormField>
 
-                    <div className="space-y-1.5">
-                        <label htmlFor="projectTitle" className="text-sm font-semibold text-slate-700">Titre du Projet</label>
+                    <FormField label="Titre du projet" required>
                         <input
                             type="text"
-                            id="projectTitle"
                             name="projectTitle"
                             required
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 transition-all outline-none"
                             placeholder="Mon Super Site"
                             value={formData.projectTitle}
                             onChange={handleChange}
+                            className="form-input"
                         />
-                    </div>
+                    </FormField>
 
-                    <div className="space-y-1.5">
-                        <div className="flex justify-between">
-                            <label htmlFor="slug" className="text-sm font-semibold text-slate-700">Nom du Dossier (Slug)</label>
-                            <span className="text-xs text-slate-400 font-medium">Minuscules, sans espaces</span>
-                        </div>
+                    <FormField label="Identifiant URL" hint="Lettres minuscules et tirets uniquement" required>
                         <input
                             type="text"
-                            id="slug"
                             name="slug"
                             required
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 font-mono text-sm transition-all outline-none"
-                            placeholder="mon-projet-web"
+                            placeholder="mon-super-site"
                             value={formData.slug}
                             onChange={handleChange}
+                            className="form-input font-mono text-sm"
                         />
-                    </div>
+                    </FormField>
 
-                    <div className="space-y-1.5">
-                        <label htmlFor="htmlFile" className="text-sm font-semibold text-slate-700">Fichier Principal (index.html)</label>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <FileType className={`h-5 w-5 ${file ? 'text-blue-500' : 'text-slate-400'}`} />
+                    <FormField label="Fichier HTML" required>
+                        <label className="block">
+                            <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${file
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                }`}>
+                                <Upload className={`w-8 h-8 mx-auto mb-2 ${file ? 'text-blue-500' : 'text-gray-400'}`} />
+                                {file ? (
+                                    <p className="text-sm font-medium text-blue-600">{file.name}</p>
+                                ) : (
+                                    <>
+                                        <p className="text-sm font-medium text-gray-700">Cliquez pour sélectionner</p>
+                                        <p className="text-xs text-gray-500 mt-1">Fichier .html uniquement</p>
+                                    </>
+                                )}
                             </div>
                             <input
                                 type="file"
-                                id="htmlFile"
                                 accept=".html"
                                 onChange={handleFileChange}
-                                className="block w-full pl-10 text-sm text-slate-500
-                    file:mr-4 file:py-2.5 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100
-                    cursor-pointer bg-slate-50 border border-slate-200 rounded-lg
-                    py-2"
+                                className="hidden"
                             />
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1">
-                            Sélectionnez uniquement votre fichier <code>index.html</code>.
-                        </p>
-                    </div>
+                        </label>
+                    </FormField>
 
-                    <div className="space-y-1.5">
-                        <label htmlFor="description" className="text-sm font-semibold text-slate-700">Description</label>
+                    <FormField label="Description" required>
                         <textarea
-                            id="description"
                             name="description"
                             required
-                            rows={4}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 transition-all outline-none resize-none"
-                            placeholder="Décrivez votre projet en quelques mots..."
+                            rows={3}
+                            placeholder="Décrivez brièvement votre projet..."
                             value={formData.description}
                             onChange={handleChange}
+                            className="form-input resize-none"
                         />
-                    </div>
+                    </FormField>
 
                     <button
                         type="submit"
-                        disabled={isSubmitting}
-                        className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+                        disabled={status === 'submitting'}
+                        className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        {isSubmitting ? (
-                            <>
-                                <UploadCloud className="w-5 h-5 animate-bounce" />
-                                <span>Envoi en cours...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Send className="w-5 h-5" />
-                                <span>Envoyer le Projet</span>
-                            </>
-                        )}
+                        {status === 'submitting' ? 'Envoi en cours...' : 'Envoyer le projet'}
                     </button>
                 </form>
             </div>
         </div>
     );
 };
+
+interface FormFieldProps {
+    label: string;
+    hint?: string;
+    required?: boolean;
+    children: React.ReactNode;
+}
+
+const FormField: React.FC<FormFieldProps> = ({ label, hint, required, children }) => (
+    <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            {label}
+            {required && <span className="text-red-500 ml-0.5">*</span>}
+        </label>
+        {children}
+        {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+    </div>
+);
 
 export default Submit;

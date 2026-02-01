@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Layout as LayoutIcon, PlusCircle, Github } from 'lucide-react';
+import { LayoutGrid, Plus, Github } from 'lucide-react';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -8,60 +8,77 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
     const location = useLocation();
+    const isHome = location.pathname === '/';
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-            <nav className="border-b border-slate-200 bg-white sticky top-0 z-50">
-                <div className="container mx-auto px-6 h-16 flex justify-between items-center">
-                    <Link to="/" className="flex items-center space-x-2.5 font-semibold text-lg text-slate-800 hover:text-blue-600 transition-colors">
-                        <LayoutIcon className="w-5 h-5 text-blue-600" />
-                        <span>Lacordaire Hub</span>
-                    </Link>
-
-                    <div className="flex items-center space-x-8">
-                        <NavLink to="/" current={location.pathname}>Galerie</NavLink>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                    <div className="flex justify-between items-center h-16">
                         <Link
-                            to="/submit"
-                            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors flex items-center space-x-2 text-sm shadow-sm"
+                            to="/"
+                            className="flex items-center gap-2 text-gray-900 font-semibold text-lg hover:text-blue-600 transition-colors"
                         >
-                            <PlusCircle className="w-4 h-4" />
-                            <span>Soumettre un projet</span>
+                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                <LayoutGrid className="w-4 h-4 text-white" />
+                            </div>
+                            <span>Lacordaire</span>
                         </Link>
-                        <a
-                            href="https://github.com/Moussandou/lacordaireWebsite"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                            <Github className="w-5 h-5" />
-                        </a>
+
+                        <nav className="flex items-center gap-1">
+                            <NavLink to="/" active={isHome}>
+                                Projets
+                            </NavLink>
+                            <Link
+                                to="/submit"
+                                className="ml-2 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">Nouveau</span>
+                            </Link>
+                            <a
+                                href="https://github.com/Moussandou/lacordaireWebsite"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+                                title="Voir sur GitHub"
+                            >
+                                <Github className="w-5 h-5" />
+                            </a>
+                        </nav>
                     </div>
                 </div>
-            </nav>
+            </header>
 
-            <main className="container mx-auto px-6 py-12">
+            <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">
                 {children}
             </main>
 
-            <footer className="border-t border-slate-200 py-8 bg-white mt-auto">
-                <div className="container mx-auto px-6 text-center text-slate-500 text-sm">
-                    <p>© {new Date().getFullYear()} Lacordaire Hosting. Plateforme d'hébergement pour étudiants.</p>
+            <footer className="bg-white border-t border-gray-100 py-6">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center text-sm text-gray-500">
+                    © {new Date().getFullYear()} Lacordaire · Tous droits réservés
                 </div>
             </footer>
         </div>
     );
 };
 
-const NavLink = ({ to, current, children }: { to: string; current: string; children: React.ReactNode }) => {
-    const isActive = current === to;
-    return (
-        <Link
-            to={to}
-            className={`text-sm font-medium transition-colors ${isActive ? 'text-blue-600' : 'text-slate-600 hover:text-slate-900'}`}
-        >
-            {children}
-        </Link>
-    );
-};
+interface NavLinkProps {
+    to: string;
+    active: boolean;
+    children: React.ReactNode;
+}
+
+const NavLink: React.FC<NavLinkProps> = ({ to, active, children }) => (
+    <Link
+        to={to}
+        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+    >
+        {children}
+    </Link>
+);
 
 export default Layout;
